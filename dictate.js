@@ -1,22 +1,27 @@
-// dictate.js
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 class Dictate {
-  constructor(callback) {
+  constructor() {
     this.recognition = new SpeechRecognition();
     this.recognition.lang = "en-US";
     this.recognition.interimResults = true;
-    this.recognition.continuous = false;
-
-    this.callback = callback;
+    this.recognition.continuous = false; // stop automatically after pause
+    this.transcript = "";
 
     this.recognition.onresult = (event) => {
-      let transcript = "";
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        transcript += event.results[i][0].transcript;
+      let interimTranscript = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const chunk = event.results[i][0].transcript;
+
+        if (event.results[i].isFinal) {
+          this.transcript += chunk + " ";
+        } else {
+          interimTranscript = chunk; // replace previous interim
+        }
       }
-      // send transcript to main.js
-      this.callback(transcript, event.results[event.results.length - 1].isFinal);
+
+      document.getElementById("userInput").value = (this.transcript + interimTranscript).trim();
     };
 
     this.recognition.onerror = (event) => {
@@ -25,6 +30,8 @@ class Dictate {
   }
 
   start() {
+    this.transcript = ""; // clear previous
     this.recognition.start();
+    console.log("🎙️ Dictation started");
   }
 }
